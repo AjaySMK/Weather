@@ -338,7 +338,7 @@
           <div class="logo"></div>
           <div>
             <h1>Ajay Weather Pro</h1>
-            <div class="sub">Search / Tap map → location + live weather + week</div>
+            <div class="sub">Search / Tap map</div>
           </div>
         </div>
 
@@ -496,10 +496,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // ✅ Put your worker URL here (NO trailing slash)
     const BASE_API = "https://ajay-weather-pro.abc20011612.workers.dev";
-
-    // UI (desktop)
     const q = document.getElementById("q");
     const searchBtn = document.getElementById("searchBtn");
     const locBtn = document.getElementById("locBtn");
@@ -521,8 +518,7 @@
 
     const zoomHomeBtn = document.getElementById("zoomHome");
     const copyLinkBtn = document.getElementById("copyLink");
-
-    // Mobile sheet UI
+    
     const sheet = document.getElementById("sheet");
     const sheetHandle = document.getElementById("sheetHandle");
     const mPlace = document.getElementById("mPlace");
@@ -539,7 +535,6 @@
     const mLayerSel = document.getElementById("mLayer");
     const mBaseSel  = document.getElementById("mBasemap");
 
-    // Mobile modal controls
     const mapModal   = document.getElementById("mapModal");
     const openMapBtn = document.getElementById("openMap");
     const closeMapBtn= document.getElementById("closeMap");
@@ -547,12 +542,10 @@
     const gpsModalBtn= document.getElementById("gpsModal");
     const pickedLabel= document.getElementById("pickedLabel");
 
-    // Quick city buttons
     document.querySelectorAll("[data-city]").forEach(b=>{
       b.onclick = ()=> runSearch(b.dataset.city);
     });
 
-    // Sheet toggle
     let sheetOpen = false;
     function toggleSheet(force){
       sheetOpen = (typeof force === "boolean") ? force : !sheetOpen;
@@ -567,7 +560,6 @@
       statusEl.textContent = msg || "";
     }
 
-    // Map setup (desktop)
     const HOME = { lat: 6.9271, lon: 79.8612, z: 10 }; // Colombo
     const map = L.map("map", { zoomControl:true }).setView([HOME.lat, HOME.lon], HOME.z);
 
@@ -604,7 +596,6 @@
     baseSel?.addEventListener("change", ()=> setBasemap(baseSel.value));
     layerSel?.addEventListener("change", ()=> setOverlay(layerSel.value));
 
-    // Mirror mobile selectors
     mBaseSel.addEventListener("change", ()=>{
       baseSel.value = mBaseSel.value;
       setBasemap(baseSel.value);
@@ -614,7 +605,6 @@
       setOverlay(layerSel.value);
     });
 
-    // Marker
     let marker = L.marker([HOME.lat, HOME.lon]).addTo(map);
 
     function updateMarker(lat, lon, label){
@@ -622,7 +612,6 @@
       if(label) marker.bindPopup(label).openPopup();
     }
 
-    // API helper
     async function api(path){
       const res = await fetch(BASE_API + path);
       const data = await res.json().catch(()=> ({}));
@@ -630,7 +619,6 @@
       return data;
     }
 
-    // formatting
     function fmtTemp(v){
       const u = unitsSel.value === "imperial" ? "°F" : "°C";
       return (v ?? "--") + u;
@@ -648,9 +636,7 @@
       return s.charAt(0).toUpperCase() + s.slice(1);
     }
 
-    // Desktop + Mobile UI set
     function setWeatherUI(fullPlace, w){
-      // Desktop
       if(placeEl) placeEl.textContent = fullPlace || "—";
       if(tempEl)  tempEl.textContent  = fmtTemp(Math.round(w.main?.temp ?? 0));
       if(descEl)  descEl.textContent  = niceDesc(w.weather?.[0]?.description);
@@ -660,7 +646,6 @@
       if(presEl)  presEl.textContent  = (w.main?.pressure ?? "--") + " hPa";
       if(updatedEl) updatedEl.textContent = "⏱ Updated: " + new Date().toLocaleTimeString();
 
-      // Mobile sheet
       mPlace.textContent = fullPlace || "—";
       mTemp.textContent  = fmtTemp(Math.round(w.main?.temp ?? 0));
       mDesc.textContent  = niceDesc(w.weather?.[0]?.description);
@@ -695,7 +680,6 @@
     copyLinkBtn?.addEventListener("click", copyShareLink);
     mShare.addEventListener("click", copyShareLink);
 
-    // Forecast helpers
     function dayName(yyyy_mm_dd){
       const d = new Date(yyyy_mm_dd + "T00:00:00");
       return d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"2-digit" });
@@ -780,7 +764,6 @@
       });
     }
 
-    // Core: pick location -> rev + weather + forecast
     async function pickLocation(lat, lon, fallback="Selected location"){
       setStatus("Loading…", "");
       try{
@@ -806,7 +789,6 @@
 
         setUrlState({ lat, lon, q:"", layer: layerSel.value, base: baseSel.value, units });
 
-        // Mobile: open sheet a bit after update
         if(window.matchMedia("(max-width: 920px)").matches){
           toggleSheet(true);
         }
@@ -823,7 +805,6 @@
       pickLocation(lat, lon);
     });
 
-    // Search city -> geo -> pickLocation
     async function runSearch(city){
       const name = (city ?? q.value).trim();
       if(!name) return;
@@ -850,7 +831,6 @@
     searchBtn.addEventListener("click", ()=> runSearch());
     q.addEventListener("keydown", (e)=>{ if(e.key==="Enter") runSearch(); });
 
-    // My location
     function useMyLocation(){
       if(!navigator.geolocation) return setStatus("Geolocation not supported", "warn");
       setStatus("Getting your location…", "");
@@ -867,7 +847,6 @@
     }
     locBtn.addEventListener("click", useMyLocation);
 
-    // Home
     zoomHomeBtn?.addEventListener("click", ()=>{
       map.setView([HOME.lat, HOME.lon], HOME.z, { animate:true });
       pickLocation(HOME.lat, HOME.lon, "Colombo, Sri Lanka");
@@ -877,18 +856,14 @@
       pickLocation(HOME.lat, HOME.lon, "Colombo, Sri Lanka");
     });
 
-    // Units change -> reload current marker
     unitsSel.addEventListener("change", ()=>{
       const m = marker.getLatLng();
       pickLocation(Number(m.lat.toFixed(5)), Number(m.lng.toFixed(5)));
     });
 
-    // =========================
-    // ✅ Mobile Map Modal Logic
-    // =========================
     let modalMap = null;
     let modalMarker = null;
-    let pendingPick = null; // {lat, lon}
+    let pendingPick = null; 
 
     function createModalBaseLayers(){
       const dark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
@@ -998,26 +973,19 @@
       );
     });
 
-    // Keep bases in sync
     mBaseSel.addEventListener("change", ()=>{
       baseSel.value = mBaseSel.value;
       setBasemap(baseSel.value);
     });
 
-    // Share state uses base/layer values
-    // =========================
-
-    // Copy share link keeps current state
     mLayerSel.addEventListener("change", ()=>{
       layerSel.value = mLayerSel.value;
       setOverlay(layerSel.value);
     });
 
-    // Desktop share uses same
     baseSel?.addEventListener("change", ()=> { mBaseSel.value = baseSel.value; });
     layerSel?.addEventListener("change", ()=> { mLayerSel.value = layerSel.value; });
 
-    // Load from URL (state restore)
     (function loadFromUrl(){
       const p = new URLSearchParams(location.search);
       const base = p.get("base");
@@ -1058,4 +1026,5 @@
   </script>
 </body>
 </html>
+
 
