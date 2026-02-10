@@ -1,464 +1,339 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Ajay Weather Pro</title>
-  <meta name="description" content="Map pick + full location + real-time weather + forecast status." />
-
+  <meta name="description" content="Map pick + full location + real-time weather + weekly forecast." />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
-    :root {
-      --bg: #0b1020;
-      --border: rgba(255, 255, 255, .12);
-      --text: rgba(255, 255, 255, .92);
-      --muted: rgba(255, 255, 255, .66);
-      --accent: #58a6ff;
-      --shadow: 0 18px 60px rgba(0, 0, 0, .45);
+    :root{
+      --bg:#0b1020;
+      --border: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.66);
+      --accent:#58a6ff;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
       --glass: blur(14px);
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      height: 100%;
-    }
-
-    body {
-      margin: 0;
+    *{box-sizing:border-box;}
+    html,body{height:100%;}
+    body{
+      margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color: var(--text);
+      color:var(--text);
       background:
-        radial-gradient(1100px 700px at 18% 18%, rgba(88, 166, 255, .20), transparent 55%),
-        radial-gradient(900px 650px at 86% 22%, rgba(255, 123, 114, .14), transparent 55%),
-        radial-gradient(900px 700px at 50% 92%, rgba(46, 160, 67, .12), transparent 55%),
+        radial-gradient(1100px 700px at 18% 18%, rgba(88,166,255,.20), transparent 55%),
+        radial-gradient(900px 650px at 86% 22%, rgba(255,123,114,.14), transparent 55%),
+        radial-gradient(900px 700px at 50% 92%, rgba(46,160,67,.12), transparent 55%),
         linear-gradient(135deg, #070b14, #0d0f1e 55%, #0b1020);
-      overflow: hidden;
+      overflow:hidden;
     }
 
-    .app {
-      height: 100%;
-      display: grid;
-      grid-template-rows: auto 1fr;
-    }
-
-    .topbar {
+    .app{height:100%; display:grid; grid-template-rows:auto 1fr;}
+    .topbar{
       padding: 14px 14px 10px;
       backdrop-filter: var(--glass);
-      background: linear-gradient(180deg, rgba(0, 0, 0, .55), rgba(0, 0, 0, .18));
-      border-bottom: 1px solid rgba(255, 255, 255, .08);
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.18));
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      position:sticky; top:0; z-index:50;
     }
+    .toprow{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+    .brand{display:flex;gap:10px;align-items:center;}
+    .logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(45deg, rgba(88,166,255,.95), rgba(255,123,114,.85));box-shadow:0 14px 40px rgba(0,0,0,.35);}
+    h1{margin:0;font-size:18px;letter-spacing:-.2px;line-height:1.1;}
+    .sub{margin-top:2px;font-size:12px;color:var(--muted);font-weight:800;}
 
-    .toprow {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
+    .controls{
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+      justify-content:flex-end;width:min(980px,100%);
     }
-
-    .brand {
-      display: flex;
-      gap: 10px;
-      align-items: center;
+    .searchBox{
+      flex:1 1 260px;
+      display:flex;gap:8px;align-items:center;
+      padding:10px 12px;border-radius:14px;border:1px solid var(--border);
+      background: rgba(0,0,0,.25);
+      box-shadow: 0 12px 35px rgba(0,0,0,.25);
     }
-
-    .logo {
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      background: linear-gradient(45deg, rgba(88, 166, 255, .95), rgba(255, 123, 114, .85));
-      box-shadow: 0 14px 40px rgba(0, 0, 0, .35);
+    .searchBox input{
+      flex:1;border:0;outline:none;background:transparent;color:var(--text);
+      font-weight:900;font-size:14px;
     }
-
-    h1 {
-      margin: 0;
-      font-size: 18px;
-      letter-spacing: -.2px;
-      line-height: 1.1;
-    }
-
-    .sub {
-      margin-top: 2px;
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 800;
-    }
-
-    .controls {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: flex-end;
-      width: min(900px, 100%);
-    }
-
-    .searchBox {
-      flex: 1 1 260px;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: rgba(0, 0, 0, .25);
-      box-shadow: 0 12px 35px rgba(0, 0, 0, .25);
-    }
-
-    .searchBox input {
-      flex: 1;
-      border: 0;
-      outline: none;
-      background: transparent;
+    .btn, .select, .pill{
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.22);
       color: var(--text);
-      font-weight: 900;
-      font-size: 14px;
-    }
-
-    .btn,
-    .select,
-    .pill {
-      border: 1px solid var(--border);
-      background: rgba(0, 0, 0, .22);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 10px 12px;
-      font-weight: 1000;
-      cursor: pointer;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
+      border-radius:14px;
+      padding:10px 12px;
+      font-weight:1000;
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color:transparent;
       transition: transform .12s ease, filter .12s ease;
     }
+    .btn:hover,.select:hover{filter:brightness(1.05);}
+    .btn:active{transform:scale(.99);}
+    .btnPrimary{background:linear-gradient(45deg, rgba(88,166,255,.95), rgba(88,166,255,.70));border:none;color:#06121f;}
+    .pill{cursor:default;color:var(--muted);font-size:12px;white-space:nowrap;}
 
-    .btn:hover,
-    .select:hover {
-      filter: brightness(1.05);
-    }
-
-    .btn:active {
-      transform: scale(.99);
-    }
-
-    .btnPrimary {
-      background: linear-gradient(45deg, rgba(88, 166, 255, .95), rgba(88, 166, 255, .70));
-      border: none;
-      color: #06121f;
-    }
-
-    .pill {
-      cursor: default;
-      color: var(--muted);
-      font-size: 12px;
-      white-space: nowrap;
-    }
-
-    .main {
-      min-height: 0;
-      display: grid;
+    .main{
+      min-height:0;
+      display:grid;
       grid-template-columns: 1.35fr .65fr;
-      gap: 12px;
-      padding: 12px 12px 14px;
+      gap:12px;
+      padding:12px 12px 14px;
     }
 
-    .mapCard {
-      position: relative;
-      border-radius: 18px;
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, .10);
-      box-shadow: var(--shadow);
-      background: rgba(255, 255, 255, .03);
+    .mapCard{
+      position:relative;
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:var(--shadow);
+      background: rgba(255,255,255,.03);
+      min-height: 460px;
     }
+    #map{width:100%;height:100%;}
 
-    #map {
-      width: 100%;
-      height: 100%;
+    .mapOverlayBar{
+      position:absolute;left:12px;top:12px;right:12px;
+      z-index:500;
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+      pointer-events:none;
     }
+    .mapOverlayBar > *{pointer-events:auto;}
+    .miniRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
 
-    .mapOverlayBar {
-      position: absolute;
-      left: 12px;
-      top: 12px;
-      right: 12px;
-      z-index: 500;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      pointer-events: none;
+    .status{
+      position:absolute;left:12px;bottom:12px;right:12px;z-index:500;
+      padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.25);backdrop-filter: var(--glass);
+      color: var(--muted);font-weight:900;display:none;
     }
+    .status.good{background: rgba(46,160,67,.10);border-color: rgba(46,160,67,.35);color: rgba(220,255,230,.95);}
+    .status.warn{background: rgba(210,153,34,.10);border-color: rgba(210,153,34,.35);color: rgba(255,235,180,.95);}
+    .status.bad{ background: rgba(255,123,114,.10);border-color: rgba(255,123,114,.35);color: rgba(255,210,206,.95);}
 
-    .mapOverlayBar>* {
-      pointer-events: auto;
-    }
+    .side{min-height:0;display:flex;flex-direction:column;gap:12px; overflow:auto; -webkit-overflow-scrolling:touch;}
 
-    .miniRow {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .status {
-      position: absolute;
-      left: 12px;
-      bottom: 12px;
-      right: 12px;
-      z-index: 500;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, .12);
-      background: rgba(0, 0, 0, .25);
-      backdrop-filter: var(--glass);
-      color: var(--muted);
-      font-weight: 900;
-      display: none;
-    }
-
-    .status.good {
-      background: rgba(46, 160, 67, .10);
-      border-color: rgba(46, 160, 67, .35);
-      color: rgba(220, 255, 230, .95);
-    }
-
-    .status.warn {
-      background: rgba(210, 153, 34, .10);
-      border-color: rgba(210, 153, 34, .35);
-      color: rgba(255, 235, 180, .95);
-    }
-
-    .status.bad {
-      background: rgba(255, 123, 114, .10);
-      border-color: rgba(255, 123, 114, .35);
-      color: rgba(255, 210, 206, .95);
-    }
-
-    .side {
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .panel {
-      border-radius: 18px;
-      border: 1px solid rgba(255, 255, 255, .10);
-      background: rgba(255, 255, 255, .06);
+    .panel{
+      border-radius:18px;border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
       backdrop-filter: var(--glass);
       box-shadow: var(--shadow);
       padding: 14px;
     }
+    .panel h2{margin:0 0 8px;font-size:16px;letter-spacing:-.2px;}
+    .muted{color:var(--muted);font-weight:800;font-size:12px;line-height:1.4;}
 
-    .panel h2 {
-      margin: 0 0 8px;
-      font-size: 16px;
-      letter-spacing: -.2px;
+    .bigTemp{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:10px;flex-wrap:wrap;}
+    .temp{font-size:44px;font-weight:1200;letter-spacing:-1px;line-height:1;}
+    .desc{font-weight:1000;color:var(--muted);margin-top:4px;font-size:13px;}
+
+    .grid{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .tile{border-radius:16px;border:1px solid rgba(255,255,255,.10);background: rgba(0,0,0,.20);padding:12px;}
+    .tile .k{color:var(--muted);font-size:12px;font-weight:900;}
+    .tile .v{margin-top:6px;font-size:15px;font-weight:1100;}
+
+    .hint{
+      margin-top:10px;border-radius:14px;border:1px dashed rgba(255,255,255,.18);
+      padding:10px 12px;color:var(--muted);font-weight:900;font-size:12px;line-height:1.45;
     }
 
-    .muted {
-      color: var(--muted);
-      font-weight: 800;
-      font-size: 12px;
-      line-height: 1.4;
+    /* Forecast */
+    .week{
+      margin-top:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-height: 320px;
+      overflow:auto;
+      padding-right:6px;
+      -webkit-overflow-scrolling:touch;
     }
+    .week::-webkit-scrollbar{ width: 8px; }
+    .week::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius: 999px; }
+    .week::-webkit-scrollbar-track{ background: transparent; }
 
-    .bigTemp {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 12px;
-      margin-top: 10px;
-      flex-wrap: wrap;
+    .dayCard{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.20);
+      padding:12px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
     }
-
-    .temp {
-      font-size: 44px;
-      font-weight: 1200;
-      letter-spacing: -1px;
-      line-height: 1;
+    .dayLeft{display:flex; flex-direction:column; gap:4px;}
+    .dayTitle{font-weight:1100;}
+    .badgeRow{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
+    .b{
+      display:inline-block;
+      padding:4px 9px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      font-size:12px;
+      font-weight:1000;
+      color: rgba(255,255,255,.75);
+      background: rgba(255,255,255,.06);
     }
+    .b.good{border-color: rgba(46,160,67,.35); color: rgba(220,255,230,.95); background: rgba(46,160,67,.10);}
+    .b.warn{border-color: rgba(210,153,34,.35); color: rgba(255,235,180,.95); background: rgba(210,153,34,.10);}
+    .b.bad {border-color: rgba(255,123,114,.35); color: rgba(255,210,206,.95); background: rgba(255,123,114,.10);}
 
-    .desc {
-      font-weight: 1000;
-      color: var(--muted);
-      margin-top: 4px;
-      font-size: 13px;
-    }
-
-    .grid {
-      margin-top: 12px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .tile {
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, .10);
-      background: rgba(0, 0, 0, .20);
-      padding: 12px;
-    }
-
-    .tile .k {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 900;
-    }
-
-    .tile .v {
-      margin-top: 6px;
-      font-size: 15px;
-      font-weight: 1100;
-    }
-
-    .hint {
-      margin-top: 10px;
-      border-radius: 14px;
-      border: 1px dashed rgba(255, 255, 255, .18);
-      padding: 10px 12px;
-      color: var(--muted);
-      font-weight: 900;
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    .week {
-      margin-top: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .dayCard {
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, .10);
-      background: rgba(0, 0, 0, .20);
-      padding: 12px;
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .dayLeft {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .dayTitle {
-      font-weight: 1100;
-    }
-
-    .badgeRow {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-top: 6px;
-    }
-
-    .b {
-      display: inline-block;
-      padding: 4px 9px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, .12);
-      font-size: 12px;
-      font-weight: 1000;
-      color: rgba(255, 255, 255, .75);
-      background: rgba(255, 255, 255, .06);
-    }
-
-    .b.good {
-      border-color: rgba(46, 160, 67, .35);
-      color: rgba(220, 255, 230, .95);
-      background: rgba(46, 160, 67, .10);
-    }
-
-    .b.warn {
-      border-color: rgba(210, 153, 34, .35);
-      color: rgba(255, 235, 180, .95);
-      background: rgba(210, 153, 34, .10);
-    }
-
-    .b.bad {
-      border-color: rgba(255, 123, 114, .35);
-      color: rgba(255, 210, 206, .95);
-      background: rgba(255, 123, 114, .10);
-    }
-
-    @media (max-width: 920px) {
-      body {
-        overflow: auto;
-      }
-
-      .main {
-        grid-template-columns: 1fr;
-      }
-
-      .mapCard {
-        height: 62vh;
-      }
-    }
-
-    @media (max-width: 520px) {
-      h1 {
-        font-size: 16px;
-      }
-
-      .temp {
-        font-size: 40px;
-      }
-
-      .searchBox {
-        flex: 1 1 100%;
-      }
-
-      .controls {
-        justify-content: stretch;
-      }
-    }
-
-    .leaflet-popup-content-wrapper {
-      background: rgba(0, 0, 0, .55);
+    /* Leaflet popup polish */
+    .leaflet-popup-content-wrapper{
+      background: rgba(0,0,0,.55);
       color: var(--text);
-      border: 1px solid rgba(255, 255, 255, .14);
+      border: 1px solid rgba(255,255,255,.14);
       backdrop-filter: blur(10px);
       border-radius: 16px;
     }
+    .leaflet-popup-tip{
+      background: rgba(0,0,0,.55);
+      border: 1px solid rgba(255,255,255,.14);
+    }
 
-    .leaflet-popup-tip {
-      background: rgba(0, 0, 0, .55);
-      border: 1px solid rgba(255, 255, 255, .14);
+    /* ======================
+       ✅ MOBILE: Bottom sheet
+       ====================== */
+    .sheet{
+      display:none;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 4000;
+      background: rgba(10,14,22,.78);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255,255,255,.12);
+      border-radius: 22px 22px 0 0;
+      box-shadow: 0 -18px 60px rgba(0,0,0,.55);
+      transform: translateY(45%);
+      transition: transform .18s ease;
+      max-height: 78vh;
+      overflow: hidden;
     }
-    .side {
-      min-height: 0;
-      overflow: auto;
-      -webkit-overflow-scrolling: touch;
+    .sheet.open{ transform: translateY(0); }
+
+    .sheetHandle{
+      padding:10px 0 6px;
+      display:flex;
+      justify-content:center;
+      cursor:pointer;
     }
-    .week {
-      max-height: 320px;
-      overflow: auto;
-      padding-right: 6px;
-      -webkit-overflow-scrolling: touch;
-    }
-    .week::-webkit-scrollbar {
-      width: 8px;
-    }
-    .week::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, .14);
+    .sheetHandle div{
+      width: 54px; height: 5px;
       border-radius: 999px;
+      background: rgba(255,255,255,.22);
     }
-    .week::-webkit-scrollbar-track {
-      background: transparent;
+
+    .sheetBody{
+      padding: 0 14px 14px;
+      overflow:auto;
+      max-height: 72vh;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .sheetHeadRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top: 6px;
+    }
+    .sheetTitle{
+      font-weight:1200;
+      letter-spacing:-.3px;
+      font-size:16px;
+    }
+
+    .sheetMiniGrid{
+      margin-top: 10px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .sheetWeek{
+      margin-top: 10px;
+      display:flex;
+      gap:10px;
+      overflow:auto;
+      padding-bottom: 6px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .sheetWeek .dayCard{
+      min-width: 88%;
+    }
+
+    /* ======================
+       ✅ Mobile main layout
+       ====================== */
+    @media (max-width: 920px){
+      html, body { height:auto; }
+      body{ overflow:auto; }
+      .app{ height:auto; }
+      .main{ grid-template-columns:1fr; }
+      .mapCard{ display:none; } /* hide main map on mobile */
+      #openMap{ display:inline-flex; } /* show Set on Map */
+      .side{ display:none; } /* hide right panels on mobile -> use sheet */
+      .sheet{ display:block; } /* show bottom sheet */
+      .controls{
+        position: sticky;
+        top: 0;
+        z-index: 2000;
+        backdrop-filter: blur(12px);
+        background: rgba(10,15,25,.75);
+        padding: 10px;
+        border-radius: 0 0 16px 16px;
+      }
+    }
+
+    @media (min-width: 921px){
+      #openMap{ display:none; } /* desktop hide set-on-map button */
+      .sheet{ display:none; }
+    }
+
+    /* ======================
+       ✅ Mobile Map Modal
+       ====================== */
+    .mapModal{
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: none;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);
+    }
+    .mapModal.open{ display:block; }
+
+    .mapModalTop{
+      position: absolute;
+      left: 12px; right: 12px; top: 12px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap:10px;
+      z-index: 2;
+      flex-wrap: wrap;
+    }
+    .mapModalBtns{
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+    .mapModalBody{
+      position:absolute;
+      inset:0;
+      padding: 74px 12px 12px;
+    }
+    #mapModalInner{
+      width:100%;
+      height:100%;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.12);
+      overflow:hidden;
+      box-shadow: 0 18px 60px rgba(0,0,0,.45);
     }
   </style>
 </head>
@@ -470,13 +345,14 @@
         <div class="brand">
           <div class="logo"></div>
           <div>
-            <h1>Ajay Weather</h1>
+            <h1>Ajay Weather Pro</h1>
+            <div class="sub">Search / Tap map → location + live weather + week</div>
           </div>
         </div>
 
         <div class="controls">
           <div class="searchBox">
-            🔎 <input id="q" placeholder="Search city" autocomplete="off" />
+            🔎 <input id="q" placeholder="Search city (e.g., Colombo)" autocomplete="off" />
           </div>
 
           <select class="select" id="units">
@@ -485,12 +361,14 @@
           </select>
 
           <button class="btn" id="locBtn">📍 My Location</button>
+          <button class="btn" id="openMap">🗺️ Set on Map</button>
           <button class="btn btnPrimary" id="searchBtn">Search</button>
         </div>
       </div>
     </div>
 
     <div class="main">
+      <!-- Desktop Map -->
       <div class="mapCard">
         <div class="mapOverlayBar">
           <div class="miniRow">
@@ -520,6 +398,7 @@
         <div class="status" id="status"></div>
       </div>
 
+      <!-- Desktop Right Panels -->
       <div class="side">
         <div class="panel">
           <h2>Current Weather</h2>
@@ -534,24 +413,16 @@
           </div>
 
           <div class="grid">
-            <div class="tile">
-              <div class="k">Feels like</div>
-              <div class="v" id="feels">--</div>
-            </div>
-            <div class="tile">
-              <div class="k">Humidity</div>
-              <div class="v" id="hum">--</div>
-            </div>
-            <div class="tile">
-              <div class="k">Wind</div>
-              <div class="v" id="wind">--</div>
-            </div>
-            <div class="tile">
-              <div class="k">Pressure</div>
-              <div class="v" id="pres">--</div>
-            </div>
+            <div class="tile"><div class="k">Feels like</div><div class="v" id="feels">--</div></div>
+            <div class="tile"><div class="k">Humidity</div><div class="v" id="hum">--</div></div>
+            <div class="tile"><div class="k">Wind</div><div class="v" id="wind">--</div></div>
+            <div class="tile"><div class="k">Pressure</div><div class="v" id="pres">--</div></div>
           </div>
 
+          <div class="hint">
+            ✅ Tap map → full location + weather + week.<br/>
+            🔥 Overlay dropdown → temp/rain/clouds/wind layers.
+          </div>
         </div>
 
         <div class="panel">
@@ -568,16 +439,87 @@
             <button class="btn" data-city="Jaffna">Jaffna</button>
             <button class="btn" data-city="Galle">Galle</button>
           </div>
+          <div class="hint">Built by Ajay • Map: Leaflet • Data: OpenWeather</div>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- ✅ Mobile Bottom Sheet -->
+  <div class="sheet" id="sheet">
+    <div class="sheetHandle" id="sheetHandle"><div></div></div>
+    <div class="sheetBody">
+      <div class="sheetHeadRow">
+        <div>
+          <div class="sheetTitle" id="mPlace">Pick location (use Set on Map)</div>
+          <div class="muted" id="mDesc">---</div>
+        </div>
+        <div class="pill" id="mUpdated">⏱ Not loaded</div>
+      </div>
 
+      <div class="bigTemp" style="margin-top:10px">
+        <div class="temp" id="mTemp">--</div>
+        <div class="pill" style="height:fit-content">Swipe up for details</div>
+      </div>
+
+      <div class="sheetMiniGrid">
+        <div class="tile"><div class="k">Feels like</div><div class="v" id="mFeels">--</div></div>
+        <div class="tile"><div class="k">Humidity</div><div class="v" id="mHum">--</div></div>
+        <div class="tile"><div class="k">Wind</div><div class="v" id="mWind">--</div></div>
+        <div class="tile"><div class="k">Pressure</div><div class="v" id="mPres">--</div></div>
+      </div>
+
+      <div class="hint" style="margin-top:12px">
+        ✅ Tap “Set on Map” → choose place → Done.<br/>
+        🔗 Share link keeps selected place.
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="sheetTitle">Next Days</div>
+        <div class="muted">Rain / Wind / Temperature status</div>
+        <div class="sheetWeek" id="mWeek"></div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn" id="mShare">🔗 Share</button>
+        <button class="btn" id="mHome">🏠 Home</button>
+        <select class="select" id="mLayer">
+          <option value="none" selected>Overlay: None</option>
+          <option value="temp_new">Temperature</option>
+          <option value="precipitation_new">Precipitation</option>
+          <option value="clouds_new">Clouds</option>
+          <option value="wind_new">Wind</option>
+          <option value="pressure_new">Pressure</option>
+        </select>
+        <select class="select" id="mBasemap">
+          <option value="dark" selected>Base: Dark</option>
+          <option value="osm">Base: OSM</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Mobile Map Modal -->
+  <div class="mapModal" id="mapModal" aria-hidden="true">
+    <div class="mapModalTop">
+      <div class="pill" id="pickedLabel">Tap map to pick location</div>
+      <div class="mapModalBtns">
+        <button class="btn" id="gpsModal">📍 Use My Location</button>
+        <button class="btn" id="closeMap">✖ Close</button>
+        <button class="btn btnPrimary" id="doneMap">✅ Done</button>
+      </div>
+    </div>
+    <div class="mapModalBody">
+      <div id="mapModalInner"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    // ✅ Put your worker URL here (NO trailing slash)
     const BASE_API = "https://ajay-weather-pro.abc20011612.workers.dev";
 
+    // UI (desktop)
     const q = document.getElementById("q");
     const searchBtn = document.getElementById("searchBtn");
     const locBtn = document.getElementById("locBtn");
@@ -588,184 +530,240 @@
     const unitsSel = document.getElementById("units");
 
     const placeEl = document.getElementById("place");
-    const tempEl = document.getElementById("temp");
-    const descEl = document.getElementById("desc");
+    const tempEl  = document.getElementById("temp");
+    const descEl  = document.getElementById("desc");
     const feelsEl = document.getElementById("feels");
-    const humEl = document.getElementById("hum");
-    const windEl = document.getElementById("wind");
-    const presEl = document.getElementById("pres");
+    const humEl   = document.getElementById("hum");
+    const windEl  = document.getElementById("wind");
+    const presEl  = document.getElementById("pres");
     const updatedEl = document.getElementById("updated");
     const weekEl = document.getElementById("week");
 
     const zoomHomeBtn = document.getElementById("zoomHome");
     const copyLinkBtn = document.getElementById("copyLink");
 
-    document.querySelectorAll("[data-city]").forEach(b => {
-      b.onclick = () => runSearch(b.dataset.city);
+    // Mobile sheet UI
+    const sheet = document.getElementById("sheet");
+    const sheetHandle = document.getElementById("sheetHandle");
+    const mPlace = document.getElementById("mPlace");
+    const mDesc  = document.getElementById("mDesc");
+    const mTemp  = document.getElementById("mTemp");
+    const mFeels = document.getElementById("mFeels");
+    const mHum   = document.getElementById("mHum");
+    const mWind  = document.getElementById("mWind");
+    const mPres  = document.getElementById("mPres");
+    const mUpdated = document.getElementById("mUpdated");
+    const mWeek = document.getElementById("mWeek");
+    const mShare = document.getElementById("mShare");
+    const mHome = document.getElementById("mHome");
+    const mLayerSel = document.getElementById("mLayer");
+    const mBaseSel  = document.getElementById("mBasemap");
+
+    // Mobile modal controls
+    const mapModal   = document.getElementById("mapModal");
+    const openMapBtn = document.getElementById("openMap");
+    const closeMapBtn= document.getElementById("closeMap");
+    const doneMapBtn = document.getElementById("doneMap");
+    const gpsModalBtn= document.getElementById("gpsModal");
+    const pickedLabel= document.getElementById("pickedLabel");
+
+    // Quick city buttons
+    document.querySelectorAll("[data-city]").forEach(b=>{
+      b.onclick = ()=> runSearch(b.dataset.city);
     });
 
-    function setStatus(msg, type = "") {
+    // Sheet toggle
+    let sheetOpen = false;
+    function toggleSheet(force){
+      sheetOpen = (typeof force === "boolean") ? force : !sheetOpen;
+      sheet.classList.toggle("open", sheetOpen);
+    }
+    sheetHandle.addEventListener("click", ()=> toggleSheet());
+
+    function setStatus(msg, type=""){
+      if(!statusEl) return;
       statusEl.style.display = msg ? "block" : "none";
       statusEl.className = "status" + (type ? " " + type : "");
       statusEl.textContent = msg || "";
     }
-    const HOME = { lat: 9.6652, lon: 80.0212, z: 10 }; // Jaffna, Sri Lanka
-    const map = L.map("map", { zoomControl: true }).setView([HOME.lat, HOME.lon], HOME.z);
+
+    // Map setup (desktop)
+    const HOME = { lat: 6.9271, lon: 79.8612, z: 10 }; // Colombo
+    const map = L.map("map", { zoomControl:true }).setView([HOME.lat, HOME.lon], HOME.z);
 
     const baseDark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      { attribution: "© OpenStreetMap © CARTO" });
+      { attribution:"© OpenStreetMap © CARTO" });
     const baseOSM = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      { attribution: "© OpenStreetMap" });
+      { attribution:"© OpenStreetMap" });
 
     baseDark.addTo(map);
 
     let overlay = null;
-    async function setOverlay(layerName) {
-      if (overlay) { map.removeLayer(overlay); overlay = null; }
-      if (layerName === "none") return;
-
-      setStatus("Loading overlay…", "");
-      try {
+    async function setOverlay(layerName){
+      if(overlay){ map.removeLayer(overlay); overlay = null; }
+      if(layerName === "none") return;
+      try{
         const j = await api(`/tile?layer=${encodeURIComponent(layerName)}`);
-        if (!j.tileUrl) throw new Error("tileUrl missing");
         overlay = L.tileLayer(j.tileUrl, { opacity: 0.65 });
         overlay.addTo(map);
-        setStatus("", "");
-      } catch (e) {
+      }catch(e){
         setStatus("Overlay error: " + e.message, "bad");
       }
     }
 
-    function setBasemap(name) {
-      if (name === "osm") {
+    function setBasemap(name){
+      if(name === "osm"){
         map.removeLayer(baseDark);
         baseOSM.addTo(map);
-      } else {
+      }else{
         map.removeLayer(baseOSM);
         baseDark.addTo(map);
       }
     }
 
-    baseSel.addEventListener("change", () => setBasemap(baseSel.value));
-    layerSel.addEventListener("change", () => setOverlay(layerSel.value));
+    baseSel?.addEventListener("change", ()=> setBasemap(baseSel.value));
+    layerSel?.addEventListener("change", ()=> setOverlay(layerSel.value));
+
+    // Mirror mobile selectors
+    mBaseSel.addEventListener("change", ()=>{
+      baseSel.value = mBaseSel.value;
+      setBasemap(baseSel.value);
+    });
+    mLayerSel.addEventListener("change", ()=>{
+      layerSel.value = mLayerSel.value;
+      setOverlay(layerSel.value);
+    });
 
     // Marker
     let marker = L.marker([HOME.lat, HOME.lon]).addTo(map);
 
-    function updateMarker(lat, lon, label) {
+    function updateMarker(lat, lon, label){
       marker.setLatLng([lat, lon]);
-      if (label) marker.bindPopup(label).openPopup();
+      if(label) marker.bindPopup(label).openPopup();
     }
 
     // API helper
-    async function api(path) {
+    async function api(path){
       const res = await fetch(BASE_API + path);
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.ok === false) {
-        throw new Error(data.error || ("HTTP " + res.status));
-      }
+      const data = await res.json().catch(()=> ({}));
+      if(!res.ok || data.ok === false) throw new Error(data.error || ("HTTP " + res.status));
       return data;
     }
 
     // formatting
-    function fmtTemp(v) {
+    function fmtTemp(v){
       const u = unitsSel.value === "imperial" ? "°F" : "°C";
       return (v ?? "--") + u;
     }
-    function fmtWind(v) {
+    function fmtWind(v){
       const u = unitsSel.value === "imperial" ? "mph" : "m/s";
       return (v ?? "--") + " " + u;
     }
-    function niceDesc(s) {
-      if (!s) return "---";
+    function niceDesc(s){
+      if(!s) return "---";
       return s.charAt(0).toUpperCase() + s.slice(1);
     }
-    function capitalize(s) {
-      if (!s) return "";
+    function capitalize(s){
+      if(!s) return "";
       return s.charAt(0).toUpperCase() + s.slice(1);
     }
 
-    function setWeatherUI(fullPlace, w) {
-      placeEl.textContent = fullPlace || "—";
-      tempEl.textContent = fmtTemp(Math.round(w.main?.temp ?? 0));
-      descEl.textContent = niceDesc(w.weather?.[0]?.description);
-      feelsEl.textContent = fmtTemp(Math.round(w.main?.feels_like ?? 0));
-      humEl.textContent = (w.main?.humidity ?? "--") + "%";
-      windEl.textContent = fmtWind(Math.round(w.wind?.speed ?? 0));
-      presEl.textContent = (w.main?.pressure ?? "--") + " hPa";
-      updatedEl.textContent = "⏱ Updated: " + new Date().toLocaleTimeString();
+    // Desktop + Mobile UI set
+    function setWeatherUI(fullPlace, w){
+      // Desktop
+      if(placeEl) placeEl.textContent = fullPlace || "—";
+      if(tempEl)  tempEl.textContent  = fmtTemp(Math.round(w.main?.temp ?? 0));
+      if(descEl)  descEl.textContent  = niceDesc(w.weather?.[0]?.description);
+      if(feelsEl) feelsEl.textContent = fmtTemp(Math.round(w.main?.feels_like ?? 0));
+      if(humEl)   humEl.textContent   = (w.main?.humidity ?? "--") + "%";
+      if(windEl)  windEl.textContent  = fmtWind(Math.round(w.wind?.speed ?? 0));
+      if(presEl)  presEl.textContent  = (w.main?.pressure ?? "--") + " hPa";
+      if(updatedEl) updatedEl.textContent = "⏱ Updated: " + new Date().toLocaleTimeString();
+
+      // Mobile sheet
+      mPlace.textContent = fullPlace || "—";
+      mTemp.textContent  = fmtTemp(Math.round(w.main?.temp ?? 0));
+      mDesc.textContent  = niceDesc(w.weather?.[0]?.description);
+      mFeels.textContent = fmtTemp(Math.round(w.main?.feels_like ?? 0));
+      mHum.textContent   = (w.main?.humidity ?? "--") + "%";
+      mWind.textContent  = fmtWind(Math.round(w.wind?.speed ?? 0));
+      mPres.textContent  = (w.main?.pressure ?? "--") + " hPa";
+      mUpdated.textContent = "⏱ Updated: " + new Date().toLocaleTimeString();
     }
 
     // URL state
-    function setUrlState(s) {
+    function setUrlState(s){
       const p = new URLSearchParams();
-      if (s.lat != null) p.set("lat", String(s.lat));
-      if (s.lon != null) p.set("lon", String(s.lon));
-      if (s.q) p.set("q", s.q);
-      if (s.layer) p.set("layer", s.layer);
-      if (s.base) p.set("base", s.base);
-      if (s.units) p.set("units", s.units);
+      if(s.lat!=null) p.set("lat", String(s.lat));
+      if(s.lon!=null) p.set("lon", String(s.lon));
+      if(s.q) p.set("q", s.q);
+      if(s.layer) p.set("layer", s.layer);
+      if(s.base) p.set("base", s.base);
+      if(s.units) p.set("units", s.units);
       history.replaceState({}, "", "?" + p.toString());
     }
 
-    async function copyShareLink() {
-      try {
+    async function copyShareLink(){
+      try{
         await navigator.clipboard.writeText(location.href);
         setStatus("Link copied ✅", "good");
-        setTimeout(() => setStatus(""), 900);
-      } catch {
+        setTimeout(()=> setStatus(""), 900);
+      }catch{
         setStatus("Copy failed. Manually copy URL.", "warn");
       }
     }
-    copyLinkBtn.addEventListener("click", copyShareLink);
+    copyLinkBtn?.addEventListener("click", copyShareLink);
+    mShare.addEventListener("click", copyShareLink);
 
-    // Forecast rendering
-    function dayName(yyyy_mm_dd) {
+    // Forecast helpers
+    function dayName(yyyy_mm_dd){
       const d = new Date(yyyy_mm_dd + "T00:00:00");
-      return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "2-digit" });
+      return d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"2-digit" });
     }
 
-    function classifyTemp(maxT, units) {
-      const hot = units === "imperial" ? 90 : 32;
+    function classifyTemp(maxT, units){
+      const hot  = units === "imperial" ? 90 : 32;
       const warm = units === "imperial" ? 82 : 28;
       const cool = units === "imperial" ? 68 : 20;
-
-      if (maxT == null) return { label: "Temp: —", cls: "" };
-      if (maxT >= hot) return { label: "Hot", cls: "bad" };
-      if (maxT >= warm) return { label: "Warm", cls: "warn" };
-      if (maxT <= cool) return { label: "Cool", cls: "good" };
-      return { label: "Normal", cls: "good" };
+      if (maxT == null) return { label:"Temp: —", cls:"" };
+      if (maxT >= hot)  return { label:"Hot", cls:"bad" };
+      if (maxT >= warm) return { label:"Warm", cls:"warn" };
+      if (maxT <= cool) return { label:"Cool", cls:"good" };
+      return { label:"Normal", cls:"good" };
     }
-
-    function classifyWind(windMax, units) {
-      const windy = units === "imperial" ? 18 : 8;
+    function classifyWind(windMax, units){
+      const windy  = units === "imperial" ? 18 : 8;
       const strong = units === "imperial" ? 27 : 12;
-
-      if (!windMax && windMax !== 0) return { label: "Wind: —", cls: "" };
-      if (windMax >= strong) return { label: "Strong Wind", cls: "bad" };
-      if (windMax >= windy) return { label: "Windy", cls: "warn" };
-      return { label: "Calm", cls: "good" };
+      if (windMax == null) return { label:"Wind: —", cls:"" };
+      if (windMax >= strong) return { label:"Strong Wind", cls:"bad" };
+      if (windMax >= windy)  return { label:"Windy", cls:"warn" };
+      return { label:"Calm", cls:"good" };
+    }
+    function classifyRain(rainMm){
+      if (rainMm == null) return { label:"Rain: —", cls:"" };
+      if (rainMm >= 10) return { label:`Heavy Rain (${rainMm}mm)`, cls:"bad" };
+      if (rainMm >= 3)  return { label:`Rain (${rainMm}mm)`, cls:"warn" };
+      if (rainMm > 0)   return { label:`Light Rain (${rainMm}mm)`, cls:"good" };
+      return { label:"No Rain", cls:"good" };
     }
 
-    function classifyRain(rainMm) {
-      if (rainMm == null) return { label: "Rain: —", cls: "" };
-      if (rainMm >= 10) return { label: `Heavy Rain (${rainMm}mm)`, cls: "bad" };
-      if (rainMm >= 3) return { label: `Rain (${rainMm}mm)`, cls: "warn" };
-      if (rainMm > 0) return { label: `Light Rain (${rainMm}mm)`, cls: "good" };
-      return { label: "No Rain", cls: "good" };
-    }
+    function renderWeek(daily, units){
+      const containerDesktop = weekEl;
+      const containerMobile = mWeek;
 
-    function renderWeek(daily, units) {
-      weekEl.innerHTML = "";
-      if (!daily || !daily.length) {
-        weekEl.innerHTML = `<div class="muted">No forecast data.</div>`;
+      if(containerDesktop) containerDesktop.innerHTML = "";
+      containerMobile.innerHTML = "";
+
+      if(!daily || !daily.length){
+        if(containerDesktop) containerDesktop.innerHTML = `<div class="muted">No forecast data.</div>`;
+        containerMobile.innerHTML = `<div class="muted">No forecast data.</div>`;
         return;
       }
 
       const tempUnit = units === "imperial" ? "°F" : "°C";
       const windUnit = units === "imperial" ? "mph" : "m/s";
 
-      daily.forEach(d => {
+      daily.forEach(d=>{
         const tMax = d.max != null ? Math.round(d.max) : null;
         const tMin = d.min != null ? Math.round(d.min) : null;
 
@@ -773,14 +771,11 @@
         const wStatus = classifyWind(Math.round(d.windMax || 0), units);
         const rStatus = classifyRain(d.rainMm);
 
-        const card = document.createElement("div");
-        card.className = "dayCard";
-
-        card.innerHTML = `
+        const cardHTML = `
           <div class="dayLeft">
             <div class="dayTitle">${dayName(d.date)} • ${capitalize(d.desc || "—")}</div>
             <div class="muted">
-              ${tMin == null || tMax == null ? "Temp: —" : `${tMin}${tempUnit} → ${tMax}${tempUnit}`}
+              ${tMin==null || tMax==null ? "Temp: —" : `${tMin}${tempUnit} → ${tMax}${tempUnit}`}
               • Wind max: ${Math.round(d.windMax || 0)} ${windUnit}
               • Rain: ${d.rainMm ?? 0} mm
             </div>
@@ -793,16 +788,24 @@
           <div class="pill">${d.date}</div>
         `;
 
-        weekEl.appendChild(card);
+        const card1 = document.createElement("div");
+        card1.className = "dayCard";
+        card1.innerHTML = cardHTML;
+        if(containerDesktop) containerDesktop.appendChild(card1);
+
+        const card2 = document.createElement("div");
+        card2.className = "dayCard";
+        card2.innerHTML = cardHTML;
+        containerMobile.appendChild(card2);
       });
     }
 
     // Core: pick location -> rev + weather + forecast
-    async function pickLocation(lat, lon, fallback = "Selected location") {
-      setStatus("Loading location + weather…", "");
-      try {
+    async function pickLocation(lat, lon, fallback="Selected location"){
+      setStatus("Loading…", "");
+      try{
         updateMarker(lat, lon, "Loading…");
-        map.panTo([lat, lon], { animate: true });
+        map.panTo([lat, lon], { animate:true });
 
         const rev = await api(`/rev?lat=${lat}&lon=${lon}`);
         const fullName = rev.full || rev.name || fallback;
@@ -819,80 +822,223 @@
         updateMarker(lat, lon, fullName);
 
         setStatus("Done ✅", "good");
-        setTimeout(() => setStatus(""), 900);
+        setTimeout(()=> setStatus(""), 650);
 
-        setUrlState({ lat, lon, q: "", layer: layerSel.value, base: baseSel.value, units });
+        setUrlState({ lat, lon, q:"", layer: layerSel.value, base: baseSel.value, units });
 
-      } catch (e) {
+        // Mobile: open sheet a bit after update
+        if(window.matchMedia("(max-width: 920px)").matches){
+          toggleSheet(true);
+        }
+
+      }catch(e){
         setStatus("Error: " + e.message, "bad");
       }
     }
 
-    // Map click
-    map.on("click", (e) => {
+    // Map click (desktop)
+    map.on("click", (e)=>{
       const lat = Number(e.latlng.lat.toFixed(5));
       const lon = Number(e.latlng.lng.toFixed(5));
       pickLocation(lat, lon);
     });
 
     // Search city -> geo -> pickLocation
-    async function runSearch(city) {
+    async function runSearch(city){
       const name = (city ?? q.value).trim();
-      if (!name) return;
+      if(!name) return;
 
       setStatus("Searching…", "");
-      try {
+      try{
         const geo = await api(`/geo?q=${encodeURIComponent(name)}&limit=5`);
         const loc = geo.data?.[0];
-        if (!loc || loc.lat == null || loc.lon == null) throw new Error("No location found");
+        if(!loc || loc.lat==null || loc.lon==null) throw new Error("No location found");
 
         const lat = Number(loc.lat);
         const lon = Number(loc.lon);
 
-        map.setView([lat, lon], 11, { animate: true });
+        map.setView([lat, lon], 11, { animate:true });
 
-        setUrlState({ lat, lon, q: name, layer: layerSel.value, base: baseSel.value, units: unitsSel.value });
+        setUrlState({ lat, lon, q:name, layer: layerSel.value, base: baseSel.value, units: unitsSel.value });
 
         await pickLocation(lat, lon, `${loc.name || name}${loc.country ? ", " + loc.country : ""}`);
-      } catch (e) {
+      }catch(e){
         setStatus("Error: " + e.message, "bad");
       }
     }
 
-    searchBtn.addEventListener("click", () => runSearch());
-    q.addEventListener("keydown", (e) => { if (e.key === "Enter") runSearch(); });
+    searchBtn.addEventListener("click", ()=> runSearch());
+    q.addEventListener("keydown", (e)=>{ if(e.key==="Enter") runSearch(); });
 
     // My location
-    function useMyLocation() {
-      if (!navigator.geolocation) return setStatus("Geolocation not supported", "warn");
+    function useMyLocation(){
+      if(!navigator.geolocation) return setStatus("Geolocation not supported", "warn");
       setStatus("Getting your location…", "");
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
+        (pos)=>{
           const lat = Number(pos.coords.latitude.toFixed(5));
           const lon = Number(pos.coords.longitude.toFixed(5));
-          map.setView([lat, lon], 12, { animate: true });
+          map.setView([lat, lon], 12, { animate:true });
           pickLocation(lat, lon, "Your Location");
         },
-        () => setStatus("Location permission denied.", "warn"),
-        { enableHighAccuracy: true, timeout: 8000 }
+        ()=> setStatus("Location permission denied.", "warn"),
+        { enableHighAccuracy:true, timeout: 9000 }
       );
     }
     locBtn.addEventListener("click", useMyLocation);
 
     // Home
-    zoomHomeBtn.addEventListener("click", () => {
-      map.setView([HOME.lat, HOME.lon], HOME.z, { animate: true });
+    zoomHomeBtn?.addEventListener("click", ()=>{
+      map.setView([HOME.lat, HOME.lon], HOME.z, { animate:true });
+      pickLocation(HOME.lat, HOME.lon, "Colombo, Sri Lanka");
+    });
+    mHome.addEventListener("click", ()=>{
+      map.setView([HOME.lat, HOME.lon], HOME.z, { animate:true });
       pickLocation(HOME.lat, HOME.lon, "Colombo, Sri Lanka");
     });
 
     // Units change -> reload current marker
-    unitsSel.addEventListener("change", () => {
+    unitsSel.addEventListener("change", ()=>{
       const m = marker.getLatLng();
       pickLocation(Number(m.lat.toFixed(5)), Number(m.lng.toFixed(5)));
     });
 
-    // Load from URL
-    (function loadFromUrl() {
+    // =========================
+    // ✅ Mobile Map Modal Logic
+    // =========================
+    let modalMap = null;
+    let modalMarker = null;
+    let pendingPick = null; // {lat, lon}
+
+    function createModalBaseLayers(){
+      const dark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        { attribution:"© OpenStreetMap © CARTO" });
+      const osm  = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        { attribution:"© OpenStreetMap" });
+      return { dark, osm };
+    }
+
+    function setModalBase(name){
+      if(!modalMap) return;
+      const { dark, osm } = modalMap._bases;
+      if(modalMap.hasLayer(dark)) modalMap.removeLayer(dark);
+      if(modalMap.hasLayer(osm))  modalMap.removeLayer(osm);
+      (name === "osm" ? osm : dark).addTo(modalMap);
+    }
+
+    function openMapModal(){
+      mapModal.classList.add("open");
+      mapModal.setAttribute("aria-hidden", "false");
+
+      if(!modalMap){
+        modalMap = L.map("mapModalInner", { zoomControl:true });
+        modalMap._bases = createModalBaseLayers();
+        setModalBase(mBaseSel.value);
+
+        const cur = marker.getLatLng();
+        modalMap.setView([cur.lat, cur.lng], Math.max(map.getZoom(), 11));
+        modalMarker = L.marker([cur.lat, cur.lng]).addTo(modalMap);
+
+        pickedLabel.textContent = "Tap map to pick location";
+        pendingPick = null;
+
+        modalMap.on("click", async (e) => {
+          const lat = Number(e.latlng.lat.toFixed(5));
+          const lon = Number(e.latlng.lng.toFixed(5));
+
+          pendingPick = { lat, lon };
+          modalMarker.setLatLng([lat, lon]);
+
+          pickedLabel.textContent = "Loading location…";
+          try{
+            const rev = await api(`/rev?lat=${lat}&lon=${lon}`);
+            pickedLabel.textContent = rev.full || `Selected: ${lat}, ${lon}`;
+          }catch{
+            pickedLabel.textContent = `Selected: ${lat}, ${lon}`;
+          }
+        });
+
+      }else{
+        setModalBase(mBaseSel.value);
+        const cur = marker.getLatLng();
+        modalMap.setView([cur.lat, cur.lng], Math.max(map.getZoom(), 11));
+        modalMarker.setLatLng([cur.lat, cur.lng]);
+        pendingPick = null;
+        pickedLabel.textContent = "Tap map to pick location";
+      }
+
+      setTimeout(()=> modalMap.invalidateSize(), 60);
+    }
+
+    function closeMapModal(){
+      mapModal.classList.remove("open");
+      mapModal.setAttribute("aria-hidden", "true");
+      pendingPick = null;
+    }
+
+    openMapBtn?.addEventListener("click", openMapModal);
+    closeMapBtn?.addEventListener("click", closeMapModal);
+
+    doneMapBtn?.addEventListener("click", async () => {
+      if(!pendingPick){
+        closeMapModal();
+        return;
+      }
+      const { lat, lon } = pendingPick;
+      map.setView([lat, lon], 11, { animate:true });
+      await pickLocation(lat, lon);
+      closeMapModal();
+    });
+
+    gpsModalBtn?.addEventListener("click", () => {
+      if(!navigator.geolocation){
+        pickedLabel.textContent = "Geolocation not supported";
+        return;
+      }
+      pickedLabel.textContent = "Getting your location…";
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = Number(pos.coords.latitude.toFixed(5));
+          const lon = Number(pos.coords.longitude.toFixed(5));
+
+          pendingPick = { lat, lon };
+          modalMap.setView([lat, lon], 13, { animate:true });
+          modalMarker.setLatLng([lat, lon]);
+
+          try{
+            const rev = await api(`/rev?lat=${lat}&lon=${lon}`);
+            pickedLabel.textContent = rev.full || `Your Location: ${lat}, ${lon}`;
+          }catch{
+            pickedLabel.textContent = `Your Location: ${lat}, ${lon}`;
+          }
+        },
+        () => { pickedLabel.textContent = "Location permission denied"; },
+        { enableHighAccuracy:true, timeout: 9000 }
+      );
+    });
+
+    // Keep bases in sync
+    mBaseSel.addEventListener("change", ()=>{
+      baseSel.value = mBaseSel.value;
+      setBasemap(baseSel.value);
+    });
+
+    // Share state uses base/layer values
+    // =========================
+
+    // Copy share link keeps current state
+    mLayerSel.addEventListener("change", ()=>{
+      layerSel.value = mLayerSel.value;
+      setOverlay(layerSel.value);
+    });
+
+    // Desktop share uses same
+    baseSel?.addEventListener("change", ()=> { mBaseSel.value = baseSel.value; });
+    layerSel?.addEventListener("change", ()=> { mLayerSel.value = layerSel.value; });
+
+    // Load from URL (state restore)
+    (function loadFromUrl(){
       const p = new URLSearchParams(location.search);
       const base = p.get("base");
       const layer = p.get("layer");
@@ -901,19 +1047,27 @@
       const lon = p.get("lon");
       const query = p.get("q");
 
-      if (units === "imperial") unitsSel.value = "imperial";
-      if (base === "osm" || base === "dark") { baseSel.value = base; setBasemap(base); }
-      if (layer) { layerSel.value = layer; setOverlay(layer); }
+      if(units === "imperial") unitsSel.value = "imperial";
+      if(base === "osm" || base === "dark"){
+        baseSel.value = base;
+        mBaseSel.value = base;
+        setBasemap(base);
+      }
+      if(layer){
+        layerSel.value = layer;
+        mLayerSel.value = layer;
+        setOverlay(layer);
+      }
 
-      if (lat && lon) {
+      if(lat && lon){
         const lt = Number(lat), ln = Number(lon);
-        if (!Number.isNaN(lt) && !Number.isNaN(ln)) {
+        if(!Number.isNaN(lt) && !Number.isNaN(ln)){
           map.setView([lt, ln], 11);
           pickLocation(lt, ln);
           return;
         }
       }
-      if (query) {
+      if(query){
         q.value = query;
         runSearch(query);
         return;
@@ -923,5 +1077,4 @@
     })();
   </script>
 </body>
-
 </html>
