@@ -267,10 +267,6 @@
     .sheetWeek .dayCard{
       min-width: 88%;
     }
-
-    /* ======================
-       ✅ Mobile main layout
-       ====================== */
     @media (max-width: 920px){
       html, body { height:auto; }
       body{ overflow:auto; }
@@ -295,10 +291,6 @@
       #openMap{ display:none; } /* desktop hide set-on-map button */
       .sheet{ display:none; }
     }
-
-    /* ======================
-       ✅ Mobile Map Modal
-       ====================== */
     .mapModal{
       position: fixed;
       inset: 0;
@@ -352,7 +344,7 @@
 
         <div class="controls">
           <div class="searchBox">
-            🔎 <input id="q" placeholder="Search city (e.g., Colombo)" autocomplete="off" />
+            🔎 <input id="q" placeholder="Search city " autocomplete="off" />
           </div>
 
           <select class="select" id="units">
@@ -418,11 +410,6 @@
             <div class="tile"><div class="k">Wind</div><div class="v" id="wind">--</div></div>
             <div class="tile"><div class="k">Pressure</div><div class="v" id="pres">--</div></div>
           </div>
-
-          <div class="hint">
-            ✅ Tap map → full location + weather + week.<br/>
-            🔥 Overlay dropdown → temp/rain/clouds/wind layers.
-          </div>
         </div>
 
         <div class="panel">
@@ -468,12 +455,6 @@
         <div class="tile"><div class="k">Wind</div><div class="v" id="mWind">--</div></div>
         <div class="tile"><div class="k">Pressure</div><div class="v" id="mPres">--</div></div>
       </div>
-
-      <div class="hint" style="margin-top:12px">
-        ✅ Tap “Set on Map” → choose place → Done.<br/>
-        🔗 Share link keeps selected place.
-      </div>
-
       <div style="margin-top:12px">
         <div class="sheetTitle">Next Days</div>
         <div class="muted">Rain / Wind / Temperature status</div>
@@ -499,7 +480,6 @@
     </div>
   </div>
 
-  <!-- ✅ Mobile Map Modal -->
   <div class="mapModal" id="mapModal" aria-hidden="true">
     <div class="mapModalTop">
       <div class="pill" id="pickedLabel">Tap map to pick location</div>
@@ -1078,3 +1058,4 @@
   </script>
 </body>
 </html>
+
