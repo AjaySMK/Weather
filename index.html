@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ajay Weather Pro</title>
+  <meta name="description" content="Map pick + full location + real-time weather + forecast status." />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --bg: #0b1020;
+      --border: rgba(255, 255, 255, .12);
+      --text: rgba(255, 255, 255, .92);
+      --muted: rgba(255, 255, 255, .66);
+      --accent: #58a6ff;
+      --shadow: 0 18px 60px rgba(0, 0, 0, .45);
+      --glass: blur(14px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1100px 700px at 18% 18%, rgba(88, 166, 255, .20), transparent 55%),
+        radial-gradient(900px 650px at 86% 22%, rgba(255, 123, 114, .14), transparent 55%),
+        radial-gradient(900px 700px at 50% 92%, rgba(46, 160, 67, .12), transparent 55%),
+        linear-gradient(135deg, #070b14, #0d0f1e 55%, #0b1020);
+      overflow: hidden;
+    }
+
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      padding: 14px 14px 10px;
+      backdrop-filter: var(--glass);
+      background: linear-gradient(180deg, rgba(0, 0, 0, .55), rgba(0, 0, 0, .18));
+      border-bottom: 1px solid rgba(255, 255, 255, .08);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .toprow {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(45deg, rgba(88, 166, 255, .95), rgba(255, 123, 114, .85));
+      box-shadow: 0 14px 40px rgba(0, 0, 0, .35);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -.2px;
+      line-height: 1.1;
+    }
+
+    .sub {
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      width: min(900px, 100%);
+    }
+
+    .searchBox {
+      flex: 1 1 260px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, .25);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, .25);
+    }
+
+    .searchBox input {
+      flex: 1;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .btn,
+    .select,
+    .pill {
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, .22);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-weight: 1000;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform .12s ease, filter .12s ease;
+    }
+
+    .btn:hover,
+    .select:hover {
+      filter: brightness(1.05);
+    }
+
+    .btn:active {
+      transform: scale(.99);
+    }
+
+    .btnPrimary {
+      background: linear-gradient(45deg, rgba(88, 166, 255, .95), rgba(88, 166, 255, .70));
+      border: none;
+      color: #06121f;
+    }
+
+    .pill {
+      cursor: default;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .main {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1.35fr .65fr;
+      gap: 12px;
+      padding: 12px 12px 14px;
+    }
+
+    .mapCard {
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .10);
+      box-shadow: var(--shadow);
+      background: rgba(255, 255, 255, .03);
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .mapOverlayBar {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      right: 12px;
+      z-index: 500;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .mapOverlayBar>* {
+      pointer-events: auto;
+    }
+
+    .miniRow {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .status {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      right: 12px;
+      z-index: 500;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(0, 0, 0, .25);
+      backdrop-filter: var(--glass);
+      color: var(--muted);
+      font-weight: 900;
+      display: none;
+    }
+
+    .status.good {
+      background: rgba(46, 160, 67, .10);
+      border-color: rgba(46, 160, 67, .35);
+      color: rgba(220, 255, 230, .95);
+    }
+
+    .status.warn {
+      background: rgba(210, 153, 34, .10);
+      border-color: rgba(210, 153, 34, .35);
+      color: rgba(255, 235, 180, .95);
+    }
+
+    .status.bad {
+      background: rgba(255, 123, 114, .10);
+      border-color: rgba(255, 123, 114, .35);
+      color: rgba(255, 210, 206, .95);
+    }
+
+    .side {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel {
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(255, 255, 255, .06);
+      backdrop-filter: var(--glass);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      letter-spacing: -.2px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .bigTemp {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .temp {
+      font-size: 44px;
+      font-weight: 1200;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .desc {
+      font-weight: 1000;
+      color: var(--muted);
+      margin-top: 4px;
+      font-size: 13px;
+    }
+
+    .grid {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tile {
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(0, 0, 0, .20);
+      padding: 12px;
+    }
+
+    .tile .k {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .tile .v {
+      margin-top: 6px;
+      font-size: 15px;
+      font-weight: 1100;
+    }
+
+    .hint {
+      margin-top: 10px;
+      border-radius: 14px;
+      border: 1px dashed rgba(255, 255, 255, .18);
+      padding: 10px 12px;
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .week {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .dayCard {
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(0, 0, 0, .20);
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .dayLeft {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .dayTitle {
+      font-weight: 1100;
+    }
+
+    .badgeRow {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .b {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      font-size: 12px;
+      font-weight: 1000;
+      color: rgba(255, 255, 255, .75);
+      background: rgba(255, 255, 255, .06);
+    }
+
+    .b.good {
+      border-color: rgba(46, 160, 67, .35);
+      color: rgba(220, 255, 230, .95);
+      background: rgba(46, 160, 67, .10);
+    }
+
+    .b.warn {
+      border-color: rgba(210, 153, 34, .35);
+      color: rgba(255, 235, 180, .95);
+      background: rgba(210, 153, 34, .10);
+    }
+
+    .b.bad {
+      border-color: rgba(255, 123, 114, .35);
+      color: rgba(255, 210, 206, .95);
+      background: rgba(255, 123, 114, .10);
+    }
+
+    @media (max-width: 920px) {
+      body {
+        overflow: auto;
+      }
+
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .mapCard {
+        height: 62vh;
+      }
+    }
+
+    @media (max-width: 520px) {
+      h1 {
+        font-size: 16px;
+      }
+
+      .temp {
+        font-size: 40px;
+      }
+
+      .searchBox {
+        flex: 1 1 100%;
+      }
+
+      .controls {
+        justify-content: stretch;
+      }
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: rgba(0, 0, 0, .55);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, .14);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+    }
+
+    .leaflet-popup-tip {
+      background: rgba(0, 0, 0, .55);
+      border: 1px solid rgba(255, 255, 255, .14);
+    }
+    .side {
+      min-height: 0;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .week {
+      max-height: 320px;
+      overflow: auto;
+      padding-right: 6px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .week::-webkit-scrollbar {
+      width: 8px;
+    }
+    .week::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, .14);
+      border-radius: 999px;
+    }
+    .week::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="toprow">
+        <div class="brand">
+          <div class="logo"></div>
+          <div>
+            <h1>Ajay Weather</h1>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="searchBox">
+            🔎 <input id="q" placeholder="Search city" autocomplete="off" />
+          </div>
+
+          <select class="select" id="units">
+            <option value="metric" selected>°C (Metric)</option>
+            <option value="imperial">°F (Imperial)</option>
+          </select>
+
+          <button class="btn" id="locBtn">📍 My Location</button>
+          <button class="btn btnPrimary" id="searchBtn">Search</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="mapCard">
+        <div class="mapOverlayBar">
+          <div class="miniRow">
+            <select class="select" id="layer">
+              <option value="none" selected>Overlay: None</option>
+              <option value="temp_new">Temperature</option>
+              <option value="precipitation_new">Precipitation</option>
+              <option value="clouds_new">Clouds</option>
+              <option value="wind_new">Wind</option>
+              <option value="pressure_new">Pressure</option>
+            </select>
+
+            <select class="select" id="basemap">
+              <option value="dark" selected>Base: Dark</option>
+              <option value="osm">Base: OSM</option>
+            </select>
+          </div>
+
+          <div class="miniRow">
+            <div class="pill">🖱 Tap map to pick location</div>
+            <button class="btn" id="zoomHome">🏠 Home</button>
+            <button class="btn" id="copyLink">🔗 Share</button>
+          </div>
+        </div>
+
+        <div id="map"></div>
+        <div class="status" id="status"></div>
+      </div>
+
+      <div class="side">
+        <div class="panel">
+          <h2>Current Weather</h2>
+          <div class="muted" id="place">Pick a point on map or search a city.</div>
+
+          <div class="bigTemp">
+            <div>
+              <div class="temp" id="temp">--</div>
+              <div class="desc" id="desc">---</div>
+            </div>
+            <div class="pill" id="updated">⏱ Not loaded</div>
+          </div>
+
+          <div class="grid">
+            <div class="tile">
+              <div class="k">Feels like</div>
+              <div class="v" id="feels">--</div>
+            </div>
+            <div class="tile">
+              <div class="k">Humidity</div>
+              <div class="v" id="hum">--</div>
+            </div>
+            <div class="tile">
+              <div class="k">Wind</div>
+              <div class="v" id="wind">--</div>
+            </div>
+            <div class="tile">
+              <div class="k">Pressure</div>
+              <div class="v" id="pres">--</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="panel">
+          <h2>Next Days</h2>
+          <div class="muted">Rain / Wind / Temperature status</div>
+          <div class="week" id="week"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Quick Cities</h2>
+          <div class="miniRow">
+            <button class="btn" data-city="Colombo">Colombo</button>
+            <button class="btn" data-city="Kandy">Kandy</button>
+            <button class="btn" data-city="Jaffna">Jaffna</button>
+            <button class="btn" data-city="Galle">Galle</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const BASE_API = "https://ajay-weather-pro.abc20011612.workers.dev";
+
+    const q = document.getElementById("q");
+    const searchBtn = document.getElementById("searchBtn");
+    const locBtn = document.getElementById("locBtn");
+    const statusEl = document.getElementById("status");
+
+    const layerSel = document.getElementById("layer");
+    const baseSel = document.getElementById("basemap");
+    const unitsSel = document.getElementById("units");
+
+    const placeEl = document.getElementById("place");
+    const tempEl = document.getElementById("temp");
+    const descEl = document.getElementById("desc");
+    const feelsEl = document.getElementById("feels");
+    const humEl = document.getElementById("hum");
+    const windEl = document.getElementById("wind");
+    const presEl = document.getElementById("pres");
+    const updatedEl = document.getElementById("updated");
+    const weekEl = document.getElementById("week");
+
+    const zoomHomeBtn = document.getElementById("zoomHome");
+    const copyLinkBtn = document.getElementById("copyLink");
+
+    document.querySelectorAll("[data-city]").forEach(b => {
+      b.onclick = () => runSearch(b.dataset.city);
+    });
+
+    function setStatus(msg, type = "") {
+      statusEl.style.display = msg ? "block" : "none";
+      statusEl.className = "status" + (type ? " " + type : "");
+      statusEl.textContent = msg || "";
+    }
+    const HOME = { lat: 9.6652, lon: 80.0212, z: 10 }; // Jaffna, Sri Lanka
+    const map = L.map("map", { zoomControl: true }).setView([HOME.lat, HOME.lon], HOME.z);
+
+    const baseDark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      { attribution: "© OpenStreetMap © CARTO" });
+    const baseOSM = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { attribution: "© OpenStreetMap" });
+
+    baseDark.addTo(map);
+
+    let overlay = null;
+    async function setOverlay(layerName) {
+      if (overlay) { map.removeLayer(overlay); overlay = null; }
+      if (layerName === "none") return;
+
+      setStatus("Loading overlay…", "");
+      try {
+        const j = await api(`/tile?layer=${encodeURIComponent(layerName)}`);
+        if (!j.tileUrl) throw new Error("tileUrl missing");
+        overlay = L.tileLayer(j.tileUrl, { opacity: 0.65 });
+        overlay.addTo(map);
+        setStatus("", "");
+      } catch (e) {
+        setStatus("Overlay error: " + e.message, "bad");
+      }
+    }
+
+    function setBasemap(name) {
+      if (name === "osm") {
+        map.removeLayer(baseDark);
+        baseOSM.addTo(map);
+      } else {
+        map.removeLayer(baseOSM);
+        baseDark.addTo(map);
+      }
+    }
+
+    baseSel.addEventListener("change", () => setBasemap(baseSel.value));
+    layerSel.addEventListener("change", () => setOverlay(layerSel.value));
+
+    // Marker
+    let marker = L.marker([HOME.lat, HOME.lon]).addTo(map);
+
+    function updateMarker(lat, lon, label) {
+      marker.setLatLng([lat, lon]);
+      if (label) marker.bindPopup(label).openPopup();
+    }
+
+    // API helper
+    async function api(path) {
+      const res = await fetch(BASE_API + path);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) {
+        throw new Error(data.error || ("HTTP " + res.status));
+      }
+      return data;
+    }
+
+    // formatting
+    function fmtTemp(v) {
+      const u = unitsSel.value === "imperial" ? "°F" : "°C";
+      return (v ?? "--") + u;
+    }
+    function fmtWind(v) {
+      const u = unitsSel.value === "imperial" ? "mph" : "m/s";
+      return (v ?? "--") + " " + u;
+    }
+    function niceDesc(s) {
+      if (!s) return "---";
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+    function capitalize(s) {
+      if (!s) return "";
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    function setWeatherUI(fullPlace, w) {
+      placeEl.textContent = fullPlace || "—";
+      tempEl.textContent = fmtTemp(Math.round(w.main?.temp ?? 0));
+      descEl.textContent = niceDesc(w.weather?.[0]?.description);
+      feelsEl.textContent = fmtTemp(Math.round(w.main?.feels_like ?? 0));
+      humEl.textContent = (w.main?.humidity ?? "--") + "%";
+      windEl.textContent = fmtWind(Math.round(w.wind?.speed ?? 0));
+      presEl.textContent = (w.main?.pressure ?? "--") + " hPa";
+      updatedEl.textContent = "⏱ Updated: " + new Date().toLocaleTimeString();
+    }
+
+    // URL state
+    function setUrlState(s) {
+      const p = new URLSearchParams();
+      if (s.lat != null) p.set("lat", String(s.lat));
+      if (s.lon != null) p.set("lon", String(s.lon));
+      if (s.q) p.set("q", s.q);
+      if (s.layer) p.set("layer", s.layer);
+      if (s.base) p.set("base", s.base);
+      if (s.units) p.set("units", s.units);
+      history.replaceState({}, "", "?" + p.toString());
+    }
+
+    async function copyShareLink() {
+      try {
+        await navigator.clipboard.writeText(location.href);
+        setStatus("Link copied ✅", "good");
+        setTimeout(() => setStatus(""), 900);
+      } catch {
+        setStatus("Copy failed. Manually copy URL.", "warn");
+      }
+    }
+    copyLinkBtn.addEventListener("click", copyShareLink);
+
+    // Forecast rendering
+    function dayName(yyyy_mm_dd) {
+      const d = new Date(yyyy_mm_dd + "T00:00:00");
+      return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "2-digit" });
+    }
+
+    function classifyTemp(maxT, units) {
+      const hot = units === "imperial" ? 90 : 32;
+      const warm = units === "imperial" ? 82 : 28;
+      const cool = units === "imperial" ? 68 : 20;
+
+      if (maxT == null) return { label: "Temp: —", cls: "" };
+      if (maxT >= hot) return { label: "Hot", cls: "bad" };
+      if (maxT >= warm) return { label: "Warm", cls: "warn" };
+      if (maxT <= cool) return { label: "Cool", cls: "good" };
+      return { label: "Normal", cls: "good" };
+    }
+
+    function classifyWind(windMax, units) {
+      const windy = units === "imperial" ? 18 : 8;
+      const strong = units === "imperial" ? 27 : 12;
+
+      if (!windMax && windMax !== 0) return { label: "Wind: —", cls: "" };
+      if (windMax >= strong) return { label: "Strong Wind", cls: "bad" };
+      if (windMax >= windy) return { label: "Windy", cls: "warn" };
+      return { label: "Calm", cls: "good" };
+    }
+
+    function classifyRain(rainMm) {
+      if (rainMm == null) return { label: "Rain: —", cls: "" };
+      if (rainMm >= 10) return { label: `Heavy Rain (${rainMm}mm)`, cls: "bad" };
+      if (rainMm >= 3) return { label: `Rain (${rainMm}mm)`, cls: "warn" };
+      if (rainMm > 0) return { label: `Light Rain (${rainMm}mm)`, cls: "good" };
+      return { label: "No Rain", cls: "good" };
+    }
+
+    function renderWeek(daily, units) {
+      weekEl.innerHTML = "";
+      if (!daily || !daily.length) {
+        weekEl.innerHTML = `<div class="muted">No forecast data.</div>`;
+        return;
+      }
+
+      const tempUnit = units === "imperial" ? "°F" : "°C";
+      const windUnit = units === "imperial" ? "mph" : "m/s";
+
+      daily.forEach(d => {
+        const tMax = d.max != null ? Math.round(d.max) : null;
+        const tMin = d.min != null ? Math.round(d.min) : null;
+
+        const tStatus = classifyTemp(tMax, units);
+        const wStatus = classifyWind(Math.round(d.windMax || 0), units);
+        const rStatus = classifyRain(d.rainMm);
+
+        const card = document.createElement("div");
+        card.className = "dayCard";
+
+        card.innerHTML = `
+          <div class="dayLeft">
+            <div class="dayTitle">${dayName(d.date)} • ${capitalize(d.desc || "—")}</div>
+            <div class="muted">
+              ${tMin == null || tMax == null ? "Temp: —" : `${tMin}${tempUnit} → ${tMax}${tempUnit}`}
+              • Wind max: ${Math.round(d.windMax || 0)} ${windUnit}
+              • Rain: ${d.rainMm ?? 0} mm
+            </div>
+            <div class="badgeRow">
+              <span class="b ${rStatus.cls}">${rStatus.label}</span>
+              <span class="b ${wStatus.cls}">${wStatus.label}</span>
+              <span class="b ${tStatus.cls}">${tStatus.label}</span>
+            </div>
+          </div>
+          <div class="pill">${d.date}</div>
+        `;
+
+        weekEl.appendChild(card);
+      });
+    }
+
+    // Core: pick location -> rev + weather + forecast
+    async function pickLocation(lat, lon, fallback = "Selected location") {
+      setStatus("Loading location + weather…", "");
+      try {
+        updateMarker(lat, lon, "Loading…");
+        map.panTo([lat, lon], { animate: true });
+
+        const rev = await api(`/rev?lat=${lat}&lon=${lon}`);
+        const fullName = rev.full || rev.name || fallback;
+
+        const units = unitsSel.value;
+
+        const wRes = await api(`/weather?lat=${lat}&lon=${lon}&units=${encodeURIComponent(units)}`);
+        const w = wRes.data || wRes;
+        setWeatherUI(fullName, w);
+
+        const fc = await api(`/forecast?lat=${lat}&lon=${lon}&units=${encodeURIComponent(units)}`);
+        renderWeek(fc.data?.daily || [], units);
+
+        updateMarker(lat, lon, fullName);
+
+        setStatus("Done ✅", "good");
+        setTimeout(() => setStatus(""), 900);
+
+        setUrlState({ lat, lon, q: "", layer: layerSel.value, base: baseSel.value, units });
+
+      } catch (e) {
+        setStatus("Error: " + e.message, "bad");
+      }
+    }
+
+    // Map click
+    map.on("click", (e) => {
+      const lat = Number(e.latlng.lat.toFixed(5));
+      const lon = Number(e.latlng.lng.toFixed(5));
+      pickLocation(lat, lon);
+    });
+
+    // Search city -> geo -> pickLocation
+    async function runSearch(city) {
+      const name = (city ?? q.value).trim();
+      if (!name) return;
+
+      setStatus("Searching…", "");
+      try {
+        const geo = await api(`/geo?q=${encodeURIComponent(name)}&limit=5`);
+        const loc = geo.data?.[0];
+        if (!loc || loc.lat == null || loc.lon == null) throw new Error("No location found");
+
+        const lat = Number(loc.lat);
+        const lon = Number(loc.lon);
+
+        map.setView([lat, lon], 11, { animate: true });
+
+        setUrlState({ lat, lon, q: name, layer: layerSel.value, base: baseSel.value, units: unitsSel.value });
+
+        await pickLocation(lat, lon, `${loc.name || name}${loc.country ? ", " + loc.country : ""}`);
+      } catch (e) {
+        setStatus("Error: " + e.message, "bad");
+      }
+    }
+
+    searchBtn.addEventListener("click", () => runSearch());
+    q.addEventListener("keydown", (e) => { if (e.key === "Enter") runSearch(); });
+
+    // My location
+    function useMyLocation() {
+      if (!navigator.geolocation) return setStatus("Geolocation not supported", "warn");
+      setStatus("Getting your location…", "");
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = Number(pos.coords.latitude.toFixed(5));
+          const lon = Number(pos.coords.longitude.toFixed(5));
+          map.setView([lat, lon], 12, { animate: true });
+          pickLocation(lat, lon, "Your Location");
+        },
+        () => setStatus("Location permission denied.", "warn"),
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
+    locBtn.addEventListener("click", useMyLocation);
+
+    // Home
+    zoomHomeBtn.addEventListener("click", () => {
+      map.setView([HOME.lat, HOME.lon], HOME.z, { animate: true });
+      pickLocation(HOME.lat, HOME.lon, "Colombo, Sri Lanka");
+    });
+
+    // Units change -> reload current marker
+    unitsSel.addEventListener("change", () => {
+      const m = marker.getLatLng();
+      pickLocation(Number(m.lat.toFixed(5)), Number(m.lng.toFixed(5)));
+    });
+
+    // Load from URL
+    (function loadFromUrl() {
+      const p = new URLSearchParams(location.search);
+      const base = p.get("base");
+      const layer = p.get("layer");
+      const units = p.get("units");
+      const lat = p.get("lat");
+      const lon = p.get("lon");
+      const query = p.get("q");
+
+      if (units === "imperial") unitsSel.value = "imperial";
+      if (base === "osm" || base === "dark") { baseSel.value = base; setBasemap(base); }
+      if (layer) { layerSel.value = layer; setOverlay(layer); }
+
+      if (lat && lon) {
+        const lt = Number(lat), ln = Number(lon);
+        if (!Number.isNaN(lt) && !Number.isNaN(ln)) {
+          map.setView([lt, ln], 11);
+          pickLocation(lt, ln);
+          return;
+        }
+      }
+      if (query) {
+        q.value = query;
+        runSearch(query);
+        return;
+      }
+
+      pickLocation(HOME.lat, HOME.lon, "Colombo, Sri Lanka");
+    })();
+  </script>
+</body>
+
+</html>
